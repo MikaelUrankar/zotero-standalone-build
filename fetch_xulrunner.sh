@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/local/bin/bash
 set -euo pipefail
 
 # Copyright (c) 2011  Zotero
@@ -26,7 +26,7 @@ function usage {
 	cat >&2 <<DONE
 Usage: $0 -p platforms [-s]
 Options
- -p PLATFORMS        Platforms to build (m=Mac, w=Windows, l=Linux)
+ -p PLATFORMS        Platforms to build (m=Mac, w=Windows, l=Linux, f=FreeBSD)
 DONE
 	exit 1
 }
@@ -34,6 +34,7 @@ DONE
 BUILD_MAC=0
 BUILD_WIN32=0
 BUILD_LINUX=0
+BUILD_FREEBSD=0
 while getopts "p:s" opt; do
 	case $opt in
 		p)
@@ -43,6 +44,7 @@ while getopts "p:s" opt; do
 					m) BUILD_MAC=1;;
 					w) BUILD_WIN32=1;;
 					l) BUILD_LINUX=1;;
+					f) BUILD_FREEBSD=1;;
 					*)
 						echo "$0: Invalid platform option ${OPTARG:i:1}"
 						usage
@@ -55,7 +57,7 @@ while getopts "p:s" opt; do
 done
 
 # Require at least one platform
-if [[ $BUILD_MAC == 0 ]] && [[ $BUILD_WIN32 == 0 ]] && [[ $BUILD_LINUX == 0 ]]; then
+if [[ $BUILD_MAC == 0 ]] && [[ $BUILD_WIN32 == 0 ]] && [[ $BUILD_LINUX == 0 ]] && [[ $BUILD_FREEBSD == 0 ]]; then
 	usage
 fi
 
@@ -145,11 +147,20 @@ function modify_omni {
 # Add devtools server from browser omni.ja
 function extract_devtools {
 	set +e
-	unzip browser/omni.ja 'chrome/devtools/*' -d devtools-files
-	unzip browser/omni.ja 'chrome/en-US/locale/en-US/devtools/*' -d devtools-files
+
+	mkdir browser/omni
+	cp browser/omni.ja browser/omni
+	cd browser/omni
+	# omni.ja is an "optimized" ZIP file, so use a script from Mozilla to avoid a warning from unzip
+	# here and to make it work after rezipping below
+	python2.7 "$CALLDIR/scripts/optimizejars.py" --deoptimize ./ ./ ./
+	cd ../..
+	echo $(pwd)
+	unzip browser/omni/omni.ja 'chrome/devtools/*' -d devtools-files
+	unzip browser/omni/omni.ja 'chrome/en-US/locale/en-US/devtools/*' -d devtools-files
 	mv devtools-files/chrome/en-US/locale devtools-files/chrome
 	rmdir devtools-files/chrome/en-US
-	unzip browser/omni.ja 'components/interfaces.xpt' -d devtools-files
+	unzip browser/omni/omni.ja 'components/interfaces.xpt' -d devtools-files
 	set -e
 }
 
@@ -254,6 +265,39 @@ if [ $BUILD_LINUX == 1 ]; then
 	cd ..
 	
 	rm "firefox-$GECKO_VERSION.tar.bz2"
+fi
+
+if [ $BUILD_FREEBSD == 1 ]; then
+	GECKO_VERSION="$GECKO_VERSION_FREEBSD"
+	DOWNLOAD_URL="https://cocyte.westeurope.cloudapp.azure.com/zotero"
+
+	rm -rf firefox
+
+	fetch "$DOWNLOAD_URL/i386/firefox-$GECKO_VERSION.tar.xz"
+	rm -rf firefox-i386
+	tar xvf firefox-$GECKO_VERSION.tar.xz
+	mv firefox firefox-i386
+	
+	echo $(pwd)
+	cd firefox-i386
+	modify_omni freebsd32
+	extract_devtools
+	cd ..
+	
+	rm "firefox-$GECKO_VERSION.tar.xz"
+	
+	fetch "$DOWNLOAD_URL/amd64/firefox-$GECKO_VERSION.tar.xz"
+	rm -rf firefox-amd64
+	tar xvf firefox-$GECKO_VERSION.tar.xz
+	mv firefox firefox-amd64
+	
+	echo $(pwd)
+	cd firefox-amd64
+	modify_omni freebsd64 
+	extract_devtools
+	cd ..
+	
+	rm "firefox-$GECKO_VERSION.tar.xz"
 fi
 
 echo Done

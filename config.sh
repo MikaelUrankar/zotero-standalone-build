@@ -1,9 +1,11 @@
+#!/usr/local/bin/bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Version of Gecko to build with
 GECKO_VERSION_MAC="60.9.0esr"
 GECKO_VERSION_LINUX="60.9.0esr"
 GECKO_VERSION_WIN="60.9.0esr"
+GECKO_VERSION_FREEBSD="60.9.0esr"
 
 # URL prefix for custom builds of Firefox components
 custom_components_url="https://download.zotero.org/dev/"
@@ -13,9 +15,11 @@ MAC_RUNTIME_PATH="$DIR/xulrunner/Firefox.app"
 WIN32_RUNTIME_PATH="$DIR/xulrunner/firefox-win32"
 LINUX_i686_RUNTIME_PATH="$DIR/xulrunner/firefox-i686"
 LINUX_x86_64_RUNTIME_PATH="$DIR/xulrunner/firefox-x86_64"
+FREEBSD_i386_RUNTIME_PATH="$DIR/xulrunner/firefox-i386"
+FREEBSD_amd64_RUNTIME_PATH="$DIR/xulrunner/firefox-amd64"
 
 PDF_TOOLS_VERSION="0.0.5"
-PDF_TOOLS_URL="https://zotero-download.s3.amazonaws.com/pdftools/pdftools-$PDF_TOOLS_VERSION.tar.gz"
+PDF_TOOLS_URL="https://cocyte.westeurope.cloudapp.azure.com/zotero/pdftools/pdftools-$PDF_TOOLS_VERSION.tar.xz"
 
 # Whether to sign builds
 SIGN=0

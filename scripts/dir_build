@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/local/bin/bash
 set -euo pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -9,7 +9,7 @@ function usage {
 	cat >&2 <<DONE
 Usage: $0 -p platforms
 Options
- -p PLATFORMS        Platforms to build (m=Mac, w=Windows, l=Linux)
+ -p PLATFORMS        Platforms to build (m=Mac, w=Windows, l=Linux, f=FreeBSD)
  -t                  add devtools
 DONE
 	exit 1
@@ -29,6 +29,7 @@ while getopts "p:t" opt; do
 					m) PLATFORM="m";;
 					w) PLATFORM="w";;
 					l) PLATFORM="l";;
+					f) PLATFORM="f";;
 					*)
 						echo "$0: Invalid platform option ${OPTARG:i:1}"
 						usage
@@ -50,6 +51,8 @@ if [[ -z $PLATFORM ]]; then
 		PLATFORM="l"
 	elif [ "`uname -o 2> /dev/null`" = "Cygwin" ]; then
 		PLATFORM="w"
+	elif [ "`uname`" = "FreeBSD" ]; then
+		PLATFORM="f"
 	fi
 fi
 

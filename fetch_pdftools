@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/local/bin/bash
 set -euo pipefail
 
 # Copyright (c) 2018  Zotero
@@ -25,11 +25,8 @@ cd "$SCRIPT_DIR"
 . config.sh
 
 rm -rf pdftools
-mkdir pdftools
-cd pdftools
-
-curl -o pdftools.tar.gz $PDF_TOOLS_URL
-tar -zxvf pdftools.tar.gz
-rm pdftools.tar.gz
+fetch $PDF_TOOLS_URL
+tar -zxvf pdftools-$PDF_TOOLS_VERSION.tar.xz
+rm pdftools-$PDF_TOOLS_VERSION.tar.xz
 
 echo Done
