@@ -276,8 +276,11 @@ if [ $BUILD_MAC == 1 ]; then
 	# Modify Info.plist
 	perl -pi -e "s/\{\{VERSION\}\}/$VERSION/" "$CONTENTSDIR/Info.plist"
 	perl -pi -e "s/\{\{VERSION_NUMERIC\}\}/$VERSION_NUMERIC/" "$CONTENTSDIR/Info.plist"
-	if [ $UPDATE_CHANNEL == "beta" ] || [ $UPDATE_CHANNEL == "dev" ] || [ $UPDATE_CHANNEL == "source" ]; then
+	if [ $UPDATE_CHANNEL == "beta" ] || [ $UPDATE_CHANNEL == "dev" ]; then
 		perl -pi -e "s/org\.zotero\.zotero/org.zotero.zotero-$UPDATE_CHANNEL/" "$CONTENTSDIR/Info.plist"
+	# TEMP: Necessary on Ventura until Zotero 7
+	elif [ $UPDATE_CHANNEL == "source" ]; then
+		perl -pi -e "s/org\.zotero\.zotero/org.zotero.zotero-dev/" "$CONTENTSDIR/Info.plist"
 	fi
 	perl -pi -e "s/\{\{VERSION\}\}/$VERSION/" "$CONTENTSDIR/Info.plist"
 	# Needed for "monkeypatch" Windows builds: 
@@ -358,9 +361,7 @@ if [ $BUILD_MAC == 1 ]; then
 			"$APPDIR/Contents/MacOS/pdftotext" \
 			"$APPDIR/Contents/MacOS/pdfinfo" \
 			"$APPDIR/Contents/MacOS/XUL" \
-			"$APPDIR/Contents/MacOS/updater.app/Contents/MacOS/org.mozilla.updater" \
-			"$APPDIR/Contents/XPCServices/ZoteroWordIntegrationService.xpc/Contents/MacOS/ZoteroWordIntegrationService" \
-			"$APPDIR/Contents/XPCServices/ZoteroWordIntegrationService.xpc"
+			"$APPDIR/Contents/MacOS/updater.app/Contents/MacOS/org.mozilla.updater"
 		find "$APPDIR/Contents" -name '*.dylib' -exec /usr/bin/codesign --force --options runtime --entitlements "$entitlements_file" --sign "$DEVELOPER_ID" {} \;
 		find "$APPDIR/Contents" -name '*.app' -exec /usr/bin/codesign --force --options runtime --entitlements "$entitlements_file" --sign "$DEVELOPER_ID" {} \;
 		/usr/bin/codesign --force --options runtime --entitlements "$entitlements_file" --sign "$DEVELOPER_ID" "$APPDIR/Contents/MacOS/zotero"
@@ -406,37 +407,11 @@ if [ $BUILD_MAC == 1 ]; then
 				--symlink /Applications:"/Drag Here to Install" > /dev/null
 			
 			# Upload disk image to Apple
-			output=$("$CALLDIR/scripts/notarize_mac_app" "$dmg")
+			"$CALLDIR/scripts/notarize_mac_app" "$dmg"
 			echo
-			echo "$output"
-			echo
-			id=$(echo "$output" | plutil -extract notarization-upload.RequestUUID xml1 -o - - | sed -n "s/.*<string>\(.*\)<\/string>.*/\1/p")
-			echo "Notarization request identifier: $id"
-			echo
-			
-			sleep 60
-			
-			# Check back every 30 seconds, for up to an hour
-			i="0"
-			while [ $i -lt 120 ]
-			do
-				status=$("$CALLDIR/scripts/notarization_status" $id)
-				if [[ $status != "in progress" ]]; then
-					break
-				fi
-				echo "Notarization in progress"
-				sleep 30
-				i=$[$i+1]
-			done
 			
 			# Staple notarization info to disk image
-			if [ $status == "success" ]; then
-				"$CALLDIR/scripts/notarization_stapler" "$dmg"
-			else
-				echo "Notarization failed!"
-				"$CALLDIR/scripts/notarization_status" $id
-				exit 1
-			fi
+			"$CALLDIR/scripts/notarization_stapler" "$dmg"
 			
 			echo "Notarization complete"
 		else
